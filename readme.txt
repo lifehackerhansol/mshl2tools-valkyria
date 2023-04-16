@@ -95,3 +95,34 @@ Updated libnds to 1.5.4.
 
 1.05e.110824
 Fixed no sound issue in 1.05d.
+
+1.10.110829
+Now libprism receives ARGV in proper way.
+mshl2tools treats all paths using driver letters.
+(Perhaps) now mshl2tools support sudokuhax.
+
+1.11.110830
+Now moonshell simply loader patches NDS header to use 0x02ff... for DSi mode.
+
+1.11a.110912 Schlaf
+Version bump...
+
+1.12.110917 Schlaf
+Fixed a fatal bug in _FAT_directory_lfnLength() (thanks to desmume's lovely bug).
+
+1.12a.111005 Schlaf
+Fixed 95% warnings.
+
+1.13.111116 Schlaf
+Fixed "Change DLDI" feature (forgot to clear cache :p).
+
+1.13a.111124 Schlaf
+ARM7 bios isn't dumped if not required.
+Outputs nocashMessage().
+
+1.13b.111125 Phase:Rebirth
+Cleaned up ram.c.
+
+1.13c.111211 Phase:Rebirth
+Fixed XenoFile's CRC16 calculation. (Now it shows the same value as LHA)
+Fixed XenoFile's very rare case bug: if selected music file can't be opened, xenofile freezes.

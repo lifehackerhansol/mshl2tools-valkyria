@@ -47,7 +47,8 @@ bool ret_menu9_GenM2(const char *menu_nam,const int bypassYSMenu,const char* dum
 	*memUncachedAddr(0x02fFFDF4)=(u32)ldrBuf;
 	if(ret_menu9_callback)ret_menu9_callback(ldrBuf);
 
-	installargv(ldrBuf,(char*)0x02fff400,menu_nam);
+	if(!argvToInstall)makeargv(menu_nam);
+	installargv(ldrBuf,(char*)0x02fff400);
 	_consolePrint("applying dldi...\n"); //Actually ldrBuf isn't a NDS itself, dldi patching works.
 	dldi2(ldrBuf,siz,bypassYSMenu,dumpname);
 	disc_unmount();
@@ -98,6 +99,7 @@ bool ret_menu9_GenM2(const char *menu_nam,const int bypassYSMenu,const char* dum
 	WRAM_CR = 0x03;
 
 	REG_IME = 0;
+	//REG_IPC_FIFO_CR=IPC_FIFO_ENABLE|IPC_FIFO_SEND_CLEAR;
 	REG_IE = 0;
 	REG_IF = ~0;
 

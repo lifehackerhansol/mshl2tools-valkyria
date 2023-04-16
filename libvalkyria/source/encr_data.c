@@ -271,13 +271,14 @@ const unsigned char *encr_data=key_tbl+0x30; //latter 0x1048bytes are used.
 static int inited=0;
 void InitializeKeyTable(){
 	if(inited)return;
-	if(GetRunningMode()){
-		memcpy(key_tbl+0x2a,__device_tab,8);
-		memcpy(key_tbl+0x30,__encr_data,0x1048);
-	}else{
-		CallARM7(3,GetARM7Bios,key_tbl,0x4000);
-	}
 	inited=1;
+	if(!useARM7Bios)return;
+	if(GetRunningMode()){
+		memcpy((u8*)key_tbl+0x2a,__device_tab,8);
+		memcpy((u8*)key_tbl+0x30,__encr_data,0x1048);
+	}else{
+		CallARM7(3,GetARM7Bios,key_tbl,0x4000); //good bye. with iEvo's DSi->DS compat layer, freezes here!
+	}
 }
 #endif
 
