@@ -76,13 +76,13 @@ void swapcartbeforeexec(u8* buf){
 }
 
 char ext[EXTMAX][32]={
-	".nds",
+	".nds",".argv",
 	".c",".cpp",".cc",".h",".pl",".py",".rb",".php",".txt",".ini",".log",".cfg",".conf",".htm",".html",".xml",".lst",".lua",".gm",
 	".sav",".bak",".duc",".dsv",".gds",".cfs",".ngs",
 	".dldi",".b15",".ani",".bmp",".ico",".u8m",
 };
 
-#define TEXT_START 1
+#define TEXT_START 2
 #define SAV_START  (TEXT_START+19)
 #define DLDI_START (SAV_START+7)
 #define B15_START  (DLDI_START+1)
@@ -223,7 +223,7 @@ void Timer2Handler(){
 
 type_constpchar BootLibrary;
 
-int msp_end,ext_end;
+int msp_end,assoc_end,ext_end;
 int filter;
 void usage(){
 	nocashMessageSub=0;
@@ -352,18 +352,24 @@ void Main(){
 	if(!disc_mount()){_consolePrint2("Failed.\n");die();}
 	_consolePrint2("Done.\n");
 
-#ifdef LIBFAT
+//#ifdef LIBFAT
 	BootLibrary=bootlibAvailable()?runNdsFile:ret_menu9_Gen;
-#else
-	BootLibrary=(bootlibAvailable()&&bootstubAvailable())?runNdsFileViaStub:ret_menu9_Gen;
-#endif
+//#else
+//	BootLibrary=(bootlibAvailable()&&bootstubAvailable())?runNdsFileViaStub:ret_menu9_Gen;
+//#endif
 
 	getExtlinkWrapperLoaderName(loader);
 
 	_consolePrint2("Iterating MoonShell plugin...\n");
 	msp_end=iterateMSP(MSP_START);
+#ifdef LIBFAT
+	_consolePrint2("Iterating Wood association...\n");
+	assoc_end=iterateAssoc(msp_end);
+#else
+	assoc_end=msp_end; //really damn...
+#endif
 	_consolePrint2("Iterating MoonShell2 extlink...\n");
-	ext_end=iterateExtLink(msp_end);
+	ext_end=iterateExtLink(assoc_end);
 
 	_consolePrint2("Iterating root dir...\n");
 	memset(&ftop,0,sizeof(top));
@@ -520,6 +526,28 @@ void Main(){
 				if(loader[0])runCommercial(file,loader);
 				BootLibrary(file);
 				while(scanKeys(),keysHeld())swiWaitForVBlank();
+				_consolePrint("Failed. Press any key.\n");
+				while(scanKeys(),!keysDown())swiWaitForVBlank();
+				usage();
+				getfilelist(dir,filter);
+			break;}
+
+			//handler_ARGV
+			if(strlen(p->name)>4&&!strcasecmp(p->name+strlen(p->name)-5,".argv")){
+				strcpy(file,dir);
+				strcat(file,p->name);
+				destroyfilelist();
+				_consolePrintf2("Selected %s\n",file);
+				_consoleClear();
+
+				FILE *f=fopen(file,"rb");
+				if(!f)goto argv_fail;
+				fread(libprism_cbuf,1,filelength(fileno(f)),f);
+				fclose(f);
+				char *p=parseargv(libprism_cbuf);
+				BootLibrary(p);
+				while(scanKeys(),keysHeld())swiWaitForVBlank();
+argv_fail:
 				_consolePrint("Failed. Press any key.\n");
 				while(scanKeys(),!keysDown())swiWaitForVBlank();
 				usage();
@@ -862,8 +890,24 @@ msp_sound_end:
 				usage();
 			}}
 
+			// handler_Assoc
+			{int i;for(i=msp_end;i<assoc_end;i++)
+			if(strlen(ext[i])&&strlen(p->name)>=strlen(ext[i])&&!strcasecmp(p->name+strlen(p->name)-strlen(ext[i]),ext[i])){
+				strcpy(file,dir);
+				strcat(file,p->name);
+				destroyfilelist();
+				_consolePrintf2("Selected %s\n",file);
+				_consoleClear();
+				runAssoc(file,ext[i]);
+				while(scanKeys(),keysHeld())swiWaitForVBlank();
+				_consolePrint("Failed. Press any key.\n");
+				while(scanKeys(),!keysDown())swiWaitForVBlank();
+				usage();
+				getfilelist(dir,filter);
+			}}
+
 			// handler_ExtLink
-			{int i;for(i=msp_end;i<ext_end;i++)
+			{int i;for(i=assoc_end;i<ext_end;i++)
 			if(strlen(ext[i])&&strlen(p->name)>=strlen(ext[i])&&!strcasecmp(p->name+strlen(p->name)-strlen(ext[i]),ext[i])){
 				strcpy(file,dir);
 				strcat(file,p->name);

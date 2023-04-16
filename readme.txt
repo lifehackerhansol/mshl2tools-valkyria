@@ -126,3 +126,18 @@ Cleaned up ram.c.
 1.13c.111211 Phase:Rebirth
 Fixed XenoFile's CRC16 calculation. (Now it shows the same value as LHA)
 Fixed XenoFile's very rare case bug: if selected music file can't be opened, xenofile freezes.
+
+1.14.120111 Phase:Rebirth
+Hopefully XenoFile's warning are resolved using typeof casting (lol).
+Rebuilt with DevKitARMr37 + libnds r4875.
+
+1.14a.120122 Phase:Rebirth
+savbackup now uses r+b if target is already present.
+
+1.14b.120228 Phase:Rebirth
+Fixed libelm's bootlib loader.
+Fixed libelm's obtaining SFN.
+
+1.15.120308 Phase:Rebirth
+detects extmem size more precisely.
+XenoFile can now call /__rpg/associations.ini (libfat only).
