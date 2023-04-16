@@ -35,6 +35,7 @@ enum FIFOCommand{
 	WriteFirmware		= 0x103,
 	RequestBatteryLevel	= 0x111,
 	RequestTemperature	= 0x112,
+	UnbrickGWInstaller	= 0x1101,
 
 	EnableDSTTSDHCFlag	= 0x201,
 	DisableDSTTSDHCFlag	= 0x202,

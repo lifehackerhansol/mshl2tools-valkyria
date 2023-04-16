@@ -64,7 +64,7 @@
 ///// Config end /////
 
 ///// include and version info /////
-#define ROMVERSION "1.15.120308 Phase:Rebirth"
+#define ROMVERSION "1.16g.160319 Phase:Neige"
 #define ROMDATE ""__DATE__" "__TIME__" GMT+09:00"
 
 #if defined(LIBFAT) && defined(LIBELM)
@@ -72,14 +72,14 @@
 #elif defined(LIBFAT)
 #include <fat.h>
 #ifdef _LIBNDS_MAJOR_
-#define ROMENV "DevKitARMr37 + libnds r4875 (FIFO) +\nlibfat r4892(modified)"
+#define ROMENV "DevKitARMr45 + libnds 1.5.12 (FIFO) +\nlibfat 1.0.14(modified)"
 #else
 #define ROMENV "DevKitARMr23b + libnds-20071023/i +\nlibfat-20080530less(modified) [legacy]"
 #endif
 #elif defined(LIBELM)
 #include "../libelm/include/elm.h"
 #ifdef _LIBNDS_MAJOR_
-#define ROMENV "DevKitARMr37 + libnds r4875 (FIFO) +\nlibelm R0.09(modified)"
+#define ROMENV "DevKitARMr45 + libnds 1.5.12 (FIFO) +\nlibelm R0.09(modified)"
 #else
 #define ROMENV "DevKitARMr23b + libnds-20071023/i +\nlibelm R0.09(modified) [legacy]"
 #endif
