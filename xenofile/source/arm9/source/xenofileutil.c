@@ -50,7 +50,7 @@ ok:
 	}
 	mydirclose(dp);
 	if(contentcount<2)return;
-	if(contentcount>4096)_consolePrint2("contentcount>4096. sort skipped.\n");
+	if(contentcount>4096){_consolePrint2("contentcount>4096. sort skipped.\n");return;}
 	{
 		fileinfo *fI;
 		int i,j;
@@ -114,7 +114,7 @@ void runCommercial(char *file,char *loader){
 	if(!isHomebrew(head)){
 		strcpy(target,file);fclose(f);goto target_set;
 	}else if(!strcmp((char*)head+0x1e0,"mshl2wrap link")){
-		unsigned int s=(head[0x1f0]<<24)+(head[0x1f1]<<16)+(head[0x1f2]<<8)+head[0x1f3];
+		unsigned int s=((unsigned int)head[0x1f0]<<24)+(head[0x1f1]<<16)+(head[0x1f2]<<8)+head[0x1f3];
 		_consolePrint("Detected mshl2wrap link.\n");
 		if(size<s+256*3){fclose(f);_consolePrintf("mshl2wrap link broken %s\n",file);die();}
 		fseek(f,s,SEEK_SET);fread(target,1,256*3,f);fclose(f);goto target_set;
@@ -188,8 +188,9 @@ exec:
 }
 
 bool runRPGLink(const char *file){
-	strcpy((char*)0x023fda00,"fat1:");
-	strcpy((char*)0x023fda05,file);
+	//strcpy((char*)0x023fda00,"fat1:");
+	//strcpy((char*)0x023fda05,file);
+	strcpy((char*)0x023fda00,file);
 	return ret_menu9_Gen("/__rpg/rpglink.nds");
 }
 

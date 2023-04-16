@@ -107,6 +107,7 @@ int main() {
 
 	irqInit();
 	// Start the RTC tracking IRQ
+	resyncClock();
 	initClockIRQ();
 	fifoInit();
 

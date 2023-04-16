@@ -15,7 +15,6 @@ extern int hidehidden;
 //u32 sound_status,vflag,playtime,playtime_v,playtime_flag;
 //u32 need_read,prev_timer;
 
-u32 g_stereo;
 s16 *g_pL;
 s16 *g_pR;
 u16 g_channel;
@@ -31,18 +30,14 @@ mm_word on_stream_request_msp( mm_word length, mm_addr dest, mm_stream_formats f
 		*target++ = g_pL[g_ptr];
 		if(g_channel>1)*target++ = g_pR[g_ptr];
 		g_ptr++;
-		if(g_ptr==g_samples/2){ //fill former
+		if(g_ptr==g_samples){
 			if(!g_PB)return 0;
 			g_getsamples=g_PB->pSL->Update(g_pL,g_channel>1?g_pR:NULL);
-		}
-		if(g_ptr==g_samples){ //fill latter
-			if(!g_PB)return 0;
-			g_getsamples=g_PB->pSL->Update(g_pL+g_samples/2,g_channel>1?g_pR+g_samples/2:NULL);
 			g_ptr=0;
 		}
 	}
 
-	return length;
+	return length-len;
 }
 
 void swapcartbeforeexec(u8* buf){
@@ -131,7 +126,9 @@ char *systemmenu[]={
 	"Show M3 Region / R4 Jumper",
 	"Swap microSD",
 	"Change DLDI",
+	"Dump DLDI (dldicaptor)",
 	"Dump Bios/Firmware",
+	"Dump GBA",
 	"Test microSD speed",
 	"Fix FSInfo sector",
 	"Return to firmware(moonshl2)",
@@ -191,7 +188,9 @@ enum{
 	sys_m3region,
 	sys_swapsd,
 	sys_changedldi,
+	sys_dldicaptor,
 	sys_bios,
+	sys_dumpgba,
 	sys_testsd,
 	sys_fixfsinfo,
 	sys_return,
@@ -815,9 +814,9 @@ u8m_fail:
 					mmStreamClose();
 					_consolePrint2("Opening...\n");
 					if(!PB->pSL->Start((int)f)){_consolePrint2("cannot open music.\n");goto msp_fail;}
-					g_samples=PB->pSL->GetSamplePerFrame()*2;
+					g_samples=PB->pSL->GetSamplePerFrame();
 					g_channel=PB->pSL->GetChannelCount();
-					g_pL=(s16*)malloc(2*g_samples);
+					g_pL=(s16*)malloc(2*g_samples); //on maxmod, application must not handle buffering.
 					g_pR=NULL;
 					if(g_channel>1)g_pR=(s16*)malloc(2*g_samples);
 					if(!g_pL||(g_channel>1&&!g_pR)){
@@ -826,17 +825,16 @@ u8m_fail:
 						_consolePrint2("cannot alloc buffer.\n");goto msp_fail;
 					}
 					PB->pSL->Update(g_pL,g_channel>1?g_pR:NULL);
-					PB->pSL->Update(g_pL+g_samples/2,g_channel>1?g_pR+g_samples/2:NULL);
-					g_ptr=0;g_getsamples=g_samples/2;
+					g_ptr=0;g_getsamples=g_samples;
 					g_PB=PB;
 					{
 						mm_stream mystream;
-						mystream.sampling_rate	= PB->pSL->GetSampleRate();	// sampling rate = 25khz
-						mystream.buffer_length	= g_samples;			// buffer length = 1200 samples
-						mystream.callback	= on_stream_request_msp;		// set callback function
-						mystream.format		= g_channel>1?MM_STREAM_16BIT_STEREO:MM_STREAM_16BIT_MONO; // format = stereo 16-bit
-						mystream.timer		= MM_TIMER0;			// use hardware timer 0
-						mystream.manual		= false;				// use manual filling
+						mystream.sampling_rate	= PB->pSL->GetSampleRate();
+						mystream.buffer_length	= g_samples*16; // 8x on stereo
+						mystream.callback	= on_stream_request_msp;
+						mystream.format		= g_channel>1?MM_STREAM_16BIT_STEREO:MM_STREAM_16BIT_MONO;
+						mystream.timer		= MM_TIMER0;
+						mystream.manual		= true; //fill manually; we need to fill as fast as possible.
 						mmStreamOpen( &mystream );
 					}
 					//IPCZ->blanks=0;
@@ -852,8 +850,8 @@ u8m_fail:
 						//swiIntrWait( 0, IRQ_VCOUNT);
 		
 						// update stream
-						//mmStreamUpdate();
-						if(g_getsamples<g_samples/2)break;
+						mmStreamUpdate();
+						if(g_getsamples<g_samples)break;
 
 						// wait until next frame
 						swiWaitForVBlank();
@@ -1847,7 +1845,7 @@ char *region[]={
 	"NOE/GER:Germany", //D
 	"USA", //E
 	"FRA:France",
-	"Unknown" //G
+	"Unknown", //G
 	"HOL:Netherlands",
 	"ITA:Italy",
 	"JPN:Japan",
@@ -2026,10 +2024,10 @@ char *region[]={
 					_consolePrintf2("Selected %s\n",file);
 					BootLibrary(file);
 					while(scanKeys(),keysHeld())swiWaitForVBlank();
-					_consolePrint("Failed. Press any key.\n");
+					_consolePrint2("Failed. Press any key.\n");
 					while(scanKeys(),!keysDown())swiWaitForVBlank();
-					usage();
 					getfilelist(dir,filter);
+					usage();
 				}break;
 				case sys_dsmenu:{
 					destroyfilelist();
@@ -2046,8 +2044,8 @@ char *region[]={
 					while(scanKeys(),keysHeld())swiWaitForVBlank();
 					_consolePrint2("Failed. Press any key.\n");
 					while(scanKeys(),!keysDown())swiWaitForVBlank();
-					usage();
 					getfilelist(dir,filter);
+					usage();
 				}break;
 				case sys_bootstub:{
 					jumpBootStub();
@@ -2056,6 +2054,31 @@ char *region[]={
 				case sys_shutdown:{
 					disc_unmount();
 					systemShutDown();
+				}break;
+				case sys_dldicaptor:{
+					//destroyfilelist();
+					_consoleClear2();
+
+					_consolePrint2("Capturing DLDI into file...\n");
+					char dldiname[768];
+					strcpy(dldiname,"/");
+					memcpy(dldiname+1,(char*)DLDIDATA+ioType,4);
+					dldiname[5]='_';
+					char *pname=dldiname+6,*friendlyname=(char*)DLDIDATA+friendlyName;
+					int i=0;
+					for(;i<strlen(friendlyname);i++)
+					if(0x20<=friendlyname[i] && friendlyname[i]<0x7f && !strchr("\\/:*?\"<>|",friendlyname[i]))
+						*pname++=friendlyname[i];
+					else
+						*pname++='_';
+					strcpy(pname,".dldi");
+					dldi2(NULL,0,0,dldiname);
+
+					while(scanKeys(),keysHeld())swiWaitForVBlank();
+					_consolePrint2("Processed. Press any key.\n");
+					while(scanKeys(),!keysDown())swiWaitForVBlank();
+					getfilelist(dir,filter); // required, since dldicaptor creates new file
+					usage();
 				}break;
 				case sys_bios:{
 					if(GetRunningMode()){_consolePrint2("not supported in DSi mode.\n");continue;}
@@ -2097,8 +2120,32 @@ bios_end:
 					while(scanKeys(),keysHeld())swiWaitForVBlank();
 					_consolePrint2("Press any key.\n");
 					while(scanKeys(),!keysDown())swiWaitForVBlank();
-					usage();
 					getfilelist(dir,filter);
+					usage();
+				}break;
+				case sys_dumpgba:{
+					if(fwinfo.NDSType>=NDSi){_consolePrint2("not supported in DSi.\n");continue;}
+					//destroyfilelist();
+					_consoleClear2();
+
+					_consolePrint2("Dumping slot2...\n");
+					int i=0,j;
+					FILE *f=fopen("/GBADUMP.GBA","wb");
+					_consoleStartProgress2();
+					for(;i<32;i++)
+						for(j=0;j<1024*1024;){
+							fwrite((u8*)0x08000000+i*1024*1024+j,65536,1,f);
+							j+=65536;
+							_consolePrintProgress2("Dumping",i*1024*1024+j,32*1024*1024);
+						}
+					_consoleEndProgress2();
+					fclose(f);
+
+					while(scanKeys(),keysHeld())swiWaitForVBlank();
+					_consolePrint2("Processed. Press any key.\n");
+					while(scanKeys(),!keysDown())swiWaitForVBlank();
+					getfilelist(dir,filter); // required, since gbadump creates new file
+					usage();
 				}break;
 				case sys_testsd:{
 					FILE *f;
@@ -2166,8 +2213,8 @@ testsd_end:
 					while(scanKeys(),keysHeld())swiWaitForVBlank();
 					_consolePrint2("Press any key.\n");
 					while(scanKeys(),!keysDown())swiWaitForVBlank();
-					usage();
 					getfilelist(dir,filter);
+					usage();
 				}break;
 				case sys_fixfsinfo:{
 #ifdef LIBELM

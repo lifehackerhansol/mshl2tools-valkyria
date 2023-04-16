@@ -74,6 +74,7 @@ void bootMoonlight(u32 bootAddress, int isPrivateRAM){
 
 //Write Flash from DSOrganize (not copied, as usual...)
 static void Write_Flash(int address, void *destination){ //length is always 256
+	u32 tmp=enterCriticalSection();
 	int i=0;
 	u8 *dst = (u8*)destination;
 	SerialWaitBusy();
@@ -122,6 +123,7 @@ static void Write_Flash(int address, void *destination){ //length is always 256
 		SerialWaitBusy();
 	}while(REG_SPIDATA&0x01);
 	REG_SPICNT = 0;
+	leaveCriticalSection(tmp);
 }
 
 u32 Queue[QueueMax];
@@ -368,10 +370,14 @@ void ReadCall(u32 argc){
 				*(vu16*)(firmware_write_addr+0x72)=swiCRC16(0xffff,firmware_write_addr,0x70);
 			else goto WriteFirmware_abort;
 
-			u32 tmp=enterCriticalSection();{
-				Write_Flash((fwinfo.fwsize-0x600)+(firmware_write_index<<8), firmware_write_addr);
-			}leaveCriticalSection(tmp);
+			Write_Flash((fwinfo.fwsize-0x600)+(firmware_write_index<<8), firmware_write_addr);
 WriteFirmware_abort:
+			ret=1;
+		}break;
+		case UnbrickGWInstaller:{
+			u8 *firmware_write_addr=(u8*)Queue[1];
+			Write_Flash(0x1fe00, firmware_write_addr);
+			Write_Flash(0x1ff00, firmware_write_addr+0x100);
 			ret=1;
 		}break;
 		case RequestTemperature:{

@@ -141,3 +141,34 @@ Fixed libelm's obtaining SFN.
 1.15.120308 Phase:Rebirth
 detects extmem size more precisely.
 XenoFile can now call /__rpg/associations.ini (libfat only).
+
+1.15a.120412 Phase:Rebirth
+Rebuilt using devkitARMr38 + libnds 1.5.5.
+
+1.15a1.120421 Phase:Neige
+Fixed that XenoFile tried to sort dir even if files are more than 4096.
+Rebuilt against libnds 1.5.6.
+
+1.15b.120510 Phase:Neige
+Rebuilt using devkitARMr40 + libnds 1.5.7.
+
+1.16.120529 Phase:Neige
+Finally fixed maxmod sound driver issue. Now it is called properly.
+
+1.16b.120720 Phase:Neige
+Rebuilt using devkitARMr41.
+
+1.16d.140203 Phase:Neige
+Integrated dldicaptor and gbadump into XenoFile.
+
+1.16d1.140204 Phase:Neige
+Fixed minor stuff.
+
+1.16e.140514 Phase:Neige
+Rebuilt using devkitARMr42 + libnds 1.5.8.
+Updated libfat.
+
+1.16g.160319 Phase:Neige
+Rebuilt using devkitARMr45 and libnds 1.5.12.
+Fixed minor stuff.
+
