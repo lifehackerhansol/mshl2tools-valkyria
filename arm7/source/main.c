@@ -32,7 +32,8 @@
 #include <maxmod7.h>
 #include "../fifoz.h"
 
-#include <stdio.h>
+//#include <stdio.h>
+#include <string.h>
 
 //---------------------------------------------------------------------------------
 void VblankHandler(void) {
@@ -48,6 +49,18 @@ void VcountHandler() {
 }
 
 ///
+void nocashMessageSafe(const char *s){
+	const int LENGTH=112;
+	int i=0,c;
+	for(;i+LENGTH<strlen(s);i+=LENGTH){
+		c=s[i+LENGTH];
+		((char*)s)[i+LENGTH]=0;
+		nocashMessage(s+i);
+		((char*)s)[i+LENGTH]=c;
+	}
+	nocashMessage(s+i);
+}
+
 #define myPM_LED_ON    (0<<4)
 #define myPM_LED_SLEEP (1<<4)
 #define myPM_LED_BLINK (3<<4)

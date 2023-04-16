@@ -5,6 +5,11 @@
 #define myPM_LED_SLEEP (1<<4)
 #define myPM_LED_BLINK (3<<4)
 
+void nocashMessageSafe(const char *s);
+void sys_exit();
+void SwitchUserMode();
+void ARM7_Bios(u32 address,u32 lastoffset);
+
 extern FWINFO fwinfo;
 extern u32 dstt_sdhc;
 extern u8 userdata;
@@ -355,8 +360,8 @@ void ReadCall(u32 argc){
 			ret=1;
 		}break;
 		case WriteFirmware:{
-			u8 firmware_write_index=Queue[1];
-			u8 *firmware_write_addr=Queue[2];
+			u8 firmware_write_index=(u8)Queue[1];
+			u8 *firmware_write_addr=(u8*)Queue[2];
 			if(firmware_write_index==0||firmware_write_index==1||firmware_write_index==2)
 				*(vu16*)(firmware_write_addr+0xfe)=swiCRC16(0,firmware_write_addr,0xfe);
 			else if(firmware_write_index==4||firmware_write_index==5)

@@ -27,7 +27,7 @@ unsigned char ndshead[512]={
   0x14,0xf8,0x30,0x6a,0x80,0x19,0xb1,0x6a,0xf2,0x6a,0x00,0xf0,0x0b,0xf8,0x30,0x6b,
   0x80,0x19,0xb1,0x6b,0xf2,0x6b,0x00,0xf0,0x08,0xf8,0x70,0x6a,0x77,0x6b,0x07,0x4c,
   0x60,0x60,0x38,0x47,0x07,0x4b,0xd2,0x18,0x9a,0x43,0x07,0x4b,0x92,0x08,0xd2,0x18,
-  0x0c,0xdf,0xf7,0x46,0x04,0xf0,0x1f,0xe5,0x00,0xfe,0x7f,0x02,0xf0,0xff,0x7f,0x02,
+  0x0c,0xdf,0xf7,0x46,0x04,0xf0,0x1f,0xe5,0x00,0xfe,0xff,0x02,0xf0,0xff,0xff,0x02, //fixed in 0.86/1.11
   0xf0,0x01,0x00,0x00,0xff,0x01,0x00,0x00,0x00,0x00,0x00,0x04,0x00,0x00,0x00,0x00,
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -50,7 +50,7 @@ static inline void _dmaFillWords(const void* src, void* dest, uint32 size) {
 	DMA_CR(3)   = DMA_COPY_WORDS | DMA_SRC_FIX | (size>>2);
 	while(DMA_CR(3) & DMA_BUSY);
 }
-
+/*
 static void __attribute__ ((long_call)) resetMemory1_ARM9 (void) 
 {
 	//REG_EXMEMCNT|=1 << 7;
@@ -60,7 +60,7 @@ static void __attribute__ ((long_call)) resetMemory1_ARM9 (void)
 }
 
 static void __attribute__ ((long_call)) (*lp_resetMemory1_ARM9) (void) =resetMemory1_ARM9;
-
+*/
 static void __attribute__ ((long_call)) resetMemory2_ARM9 (void) 
 {
  	register int i;
@@ -136,6 +136,7 @@ void bootMoonlight(u32 BootAddress){
 	}else{
 		NotifyARM7(3,ResetMoonlight,BootAddress,0);
 		REG_IME = 0; //some old homebrews requires treating REG_IME etc (which will break resetARM9() FIFO)
+		//REG_IPC_FIFO_CR=IPC_FIFO_ENABLE|IPC_FIFO_SEND_CLEAR;
 		REG_IE  = 0;
 		REG_IF  = ~0;
 		IC_InvalidateAll();
@@ -218,7 +219,8 @@ bool BootDSBooter(const char *pFilename){
 	//fclose(FileHandle);
   
 	_consolePrint("Rebooting...\n");
-	installargv(pFileBuf,(char*)0x02fff400,pFilename);
+	if(!argvToInstall)makeargv(pFilename);
+	installargv(pFileBuf,(char*)0x02fff400);
 	bootMoonlight((u32)pFileBuf+0xc0);
 	return true;
 }
@@ -260,7 +262,8 @@ bool BootDSBooterRaw(const char *pFilename){ //Not working...
 	}
   
 	_consolePrint("Rebooting...\n");
-	installargv(pFileBuf,(char*)0x02fff400,pFilename);
+	if(!argvToInstall)makeargv(pFilename);
+	installargv(pFileBuf,(char*)0x02fff400);
 	bootMoonlight((u32)pFileBuf+0xc0);
 	return true;
 }
@@ -302,6 +305,7 @@ bool BootR4Menu(const char *pFilename){
 	u32 arm7end=read32(pFileBuf+0x30)+read32(pFileBuf+0x3c);
 	int pos;
 	for(pos=512;pos<arm7end;pos+=512)R4_ReadMenu(pos,(u32*)(pFileBuf+pos),128);
+	{ int i=0; for(;i<156;i+=4)if(read16(pFileBuf+0xc0+i+2)==0x027f)write16(pFileBuf+0xc0+i+2,0x02ff); }
 	dldi2(pFileBuf,arm7end,0,NULL);
 	bootMoonlight((u32)pFileBuf+0xc0);
 	return true;
@@ -339,7 +343,9 @@ bool BootNDSROM2(const char *pFilename,const int bypassYSMenu,const char* dumpna
 	_consolePrint("Applying DLDI...\n");
 	dldi2(pFileBuf,arm7end,bypassYSMenu,dumpname);
 	_consolePrint("Rebooting...\n");
-	installargv(pFileBuf,(char*)0x02fff400,pFilename);
+	{ int i=0; for(;i<156;i+=4)if(read16(pFileBuf+0xc0+i+2)==0x027f)write16(pFileBuf+0xc0+i+2,0x02ff); }
+	if(!argvToInstall)makeargv(pFilename);
+	installargv(pFileBuf,(char*)0x02fff400);
 	bootMoonlight((u32)pFileBuf+0xc0);
 	return true;
 }
