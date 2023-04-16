@@ -154,7 +154,10 @@ void runNds(const char* filename, u32 cluster/*, bool initDisc, bool dldiPatchNd
 	VRAM_C_CR = VRAM_ENABLE | VRAM_C_LCD;
 	// Clear VRAM
 	vramset(VRAM_C, 0, 64*1024);
-	fread(VRAM_C,2,align2(st.st_size)/2,f);
+	//1.14b: modified read method
+	//fread(VRAM_C, 2, align2(st.st_size)/2, f);
+	fread(libprism_buf,1,st.st_size,f);
+	vramcpy(VRAM_C, libprism_buf, align2(st.st_size)/2);
 	fclose(f);
 	dldiloader((data_t*)VRAM_C, st.st_size); //loaderSize);
 
